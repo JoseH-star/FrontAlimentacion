@@ -13,7 +13,9 @@
 </head>
 <header>
     <div class="logo-container">
-        <a href="/inicio-de-sesion/Modulo-iniciar-sesion/home/home.html"><img href="/inicio-de-sesion/Modulo-iniciar-sesion/home/home.html" src="Inclued/lOGO.jpg" alt="Logo" class="logo"></a>
+        <a href="/inicio-de-sesion/Modulo-iniciar-sesion/home/home.html">
+            <img href="/inicio-de-sesion/Modulo-iniciar-sesion/home/home.html" src="Inclued/lOGO.jpg" alt="Logo" class="logo">
+        </a>
        
     </div>
     <button2 class="hamburger" onclick="toggleHamburgerMenu()">☰</button2>
@@ -146,23 +148,22 @@
                     <option value="mejorar_salud">Mejorar mi salud en general</option>
                 </select>
             </fieldset>
-    
-            <!-- 🔹 Botón de Envío -->
+
             <div class="boton-container">
-                <a class="button" type="button" onclick="generarMeta()">Enviar</a>
+                <button id="guardar" class="button" type="button">Enviar</button>
             </div>
-        </form>
-    </div>
-    
- 
-    <div class="meta-box" id="metaBox">
-        <h3 id="meta">Meta personalizada:</h3>
-            <div class="image-container">
-                <img src="Inclued/imagen.resultadoBien.svg" alt="Icono de resultados" />
-                 <a href="{{ route('inicio') }}"></a>
+
+            </form>
             </div>
-        <a class="continue-button" href="{{ route('inicio') }}" onclick="location.reload()">Continuar al inicio</a>
-    </div>
+
+            <!-- 🔹 Meta Box (Inicialmente Oculto) -->
+            <div class="meta-box" id="metaBox" style="display: none;">
+                <h3 id="meta">Meta personalizada:</h3>
+                <div class="image-container">
+                    <img src="{{ asset('Inclued/imagen.resultadoBien.svg') }}" alt="Icono de resultados">
+                </div>
+                <a class="continue-button" href="{{ route('inicio') }}">Continuar al inicio</a>
+            </div>
 </body>
 <footer class="footer">
     <div class="footer-container">
