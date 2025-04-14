@@ -1,4 +1,4 @@
-       :root {
+       :root { 
             --bg-color: #f0f0f0;
             --text-color: #333;
             --card-bg: white;
@@ -129,3 +129,60 @@
             text-align: center;
             width: 80px;
         }
+
+
+        /* Notificaciones */
+    .notificacion {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .notificacion.success {
+        background: #4CAF50;
+    }
+
+    .notificacion.error {
+        background: #f44336;
+    }
+
+    /* Historial */
+    #historial li {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #f8f8f8;
+        border-radius: 8px;
+    }
+
+    #historial .fecha {
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    #historial .peso {
+        color: #6d0eb1;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    #historial .meta {
+        color: #666;
+        text-align: right;
+    }
+
+    /* Gráficas */
+    .chart-box {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
