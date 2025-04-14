@@ -1,100 +1,156 @@
-let progresoReal = 69;
-let metaPeso = document.getElementById('metaPeso').value;
+let goalChart, progressChart;
 
-document.addEventListener("DOMContentLoaded", function() {
-    document.getElementById("pesoActual").value = localStorage.getItem("pesoActual") || "No disponible";
-    document.getElementById("metaSalud").value = localStorage.getItem("metaSalud") || "No disponible";
-    document.getElementById("planDieta").value = localStorage.getItem("planDieta") || "No disponible";
+document.addEventListener("DOMContentLoaded", () => {
+    inicializarGraficas();
+    configurarEventos();
+    cargarDatosIniciales();
 });
 
-// Botón de actualizar: muestra una alerta de actualización
-document.getElementById("actualizar").addEventListener("click", function() {
-    alert("Datos actualizados correctamente");
-});
+async function cargarDatosIniciales() {
+    try {
+        const response = await fetch('http://localhost:8000/api/progreso');
+        const data = await response.json();
+        
+        actualizarFormulario(data);
+        actualizarHistorial(data);
+        actualizarGraficas(data);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        actualizarGraficas({evolucion: []});
+    }
+}
 
-// Botón de guardar: envía los datos al backend
-document.getElementById("guardar").addEventListener("click", async function(event) {
-    event.preventDefault();
-
-    const descripcion = document.querySelector("textarea").value;
-    const fechaObjetivo = document.querySelector("input[type='date']").value;
-    const pesoActual = document.getElementById("pesoActual").value;
-    const metaPeso = document.getElementById("metaPeso").value;
-    const planDieta = document.getElementById("planDieta").value;
-
-    const response = await fetch("http://127.0.0.1:8000/api/objetivo", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token")
+function inicializarGraficas() {
+    // Gráfica de Línea
+    const ctxLinea = document.getElementById('progressChart').getContext('2d');
+    progressChart = new Chart(ctxLinea, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Evolución de Peso',
+                data: [],
+                borderColor: '#6d0eb1',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                backgroundColor: 'rgba(109, 14, 177, 0.1)'
+            }]
         },
-        body: JSON.stringify({
-            descripcion,
-            fecha_objetivo: fechaObjetivo,
-            peso_actual: pesoActual,
-            meta_peso: metaPeso,
-            plan_dieta: planDieta
-        })
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'Kilogramos' }
+                }
+            }
+        }
     });
 
-    const data = await response.json();
-    alert(data.mensaje);
-});
-
-// Gráfica de progreso
-const ctxProgress = document.getElementById('progressChart').getContext('2d');
-new Chart(ctxProgress, {
-    type: 'line',
-    data: {
-        labels: ['Semana 1', 'Semana 2', 'Semana 3'],
-        datasets: [{
-            label: 'Peso (kg)',
-            data: [50, 79.5, 39],
-            borderColor: '#6d0eb1e4',
-            borderWidth: 3,
-            fill: false,
-            pointBackgroundColor: '#6d0eb1e4',
-            tension: 0.4
-        }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-});
-
-// Gráfica de comparación con la meta
-const ctxGoal = document.getElementById('goalChart').getContext('2d');
-let goalChart = new Chart(ctxGoal, {
-    type: 'doughnut',
-    data: {
-        labels: ['Progreso Actual', 'Meta Restante'],
-        datasets: [{
-            data: [progresoReal - metaPeso, metaPeso],
-            backgroundColor: ['#6d0eb1e4', '#fed6e3']
-        }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-});
-
-function actualizarGraficaMeta() {
-    metaPeso = document.getElementById('metaPeso').value;
-    goalChart.data.datasets[0].data = [progresoReal - metaPeso, metaPeso];
-    goalChart.update();
-}
-
-function descargarCSV() {
-    let csvContent = "Semana,Peso (kg)\n";
-    const historial = document.getElementById("historial").innerText.split("\n");
-    historial.forEach((linea) => {
-        const datos = linea.replace("Peso ", "").replace(" kg", "").split(": ");
-        csvContent += `${datos[0]},${datos[1]}\n`;
+    // Gráfica Circular
+    const ctxCircular = document.getElementById('goalChart').getContext('2d');
+    goalChart = new Chart(ctxCircular, {
+        type: 'doughnut',
+        data: {
+            labels: ['Peso Actual', 'Diferencia'],
+            datasets: [{
+                data: [1, 1], // Valores iniciales
+                backgroundColor: ['#6d0eb1', '#f0f0f0']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: { enabled: false }
+            }
+        }
     });
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(blob, "reporte_progreso.csv");
 }
 
-function cambiarTema() {
-    document.body.classList.toggle("dark-mode");
+function actualizarFormulario(data) {
+    if(data.peso_actual) {
+        document.getElementById('pesoActual').value = data.peso_actual;
+        document.getElementById('metaPeso').value = data.meta_actual;
+    }
 }
 
-function volverInicio() {
-    window.location.href = "index.html"; // Cambia esto si el inicio está en otra URL
+function actualizarHistorial(data) {
+    const historialHTML = data.historial.map(objetivo => `
+        <li>
+            <span class="fecha">${new Date(objetivo.created_at).toLocaleDateString()}</span>
+            <span class="peso">${objetivo.peso_actual} kg</span>
+            <span class="meta">Meta: ${objetivo.meta_peso} kg</span>
+        </li>
+    `).join('');
+    
+    document.getElementById('historial').innerHTML = historialHTML;
+}
+
+function actualizarGraficas(data) {
+    // Actualizar gráfica de línea
+    const evolucion = data.evolucion || [];
+    progressChart.data.labels = evolucion.map((_, i) => `Reg. ${i + 1}`);
+    progressChart.data.datasets[0].data = evolucion;
+    progressChart.update();
+
+    // Actualizar gráfica circular
+    if(data.peso_actual && data.meta_actual) {
+        const diferencia = Math.abs(data.meta_actual - data.peso_actual);
+        goalChart.data.datasets[0].data = [
+            data.peso_actual, 
+            diferencia
+        ];
+        goalChart.update();
+    }
+}
+
+async function configurarEventos() {
+    document.getElementById('guardar').addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const objetivoData = {
+            descripcion: document.getElementById('descripcion').value,
+            fecha_objetivo: document.getElementById('fechaObjetivo').value,
+            peso_actual: document.getElementById('pesoActual').value,
+            meta_peso: document.getElementById('metaPeso').value
+        };
+
+        try {
+            const response = await fetch('http://localhost:8000/api/objetivos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(objetivoData)
+            });
+
+            const result = await response.json();
+            
+            if(!response.ok) {
+                throw new Error(result.message || 'Error al guardar');
+            }
+
+            document.getElementById('planDieta').value = result.data.plan_dieta;
+            await cargarDatosIniciales();
+            mostrarNotificacion('✅ Objetivo guardado correctamente');
+            
+        } catch (error) {
+            mostrarNotificacion(`❌ Error: ${error.message}`, 'error');
+        }
+    });
+}
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    const notificacion = document.createElement('div');
+    notificacion.className = `notificacion ${tipo}`;
+    notificacion.textContent = mensaje;
+    
+    document.body.appendChild(notificacion);
+    
+    setTimeout(() => {
+        notificacion.remove();
+    }, 3000);
 }

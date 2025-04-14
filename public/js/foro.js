@@ -1,141 +1,223 @@
-document.addEventListener("DOMContentLoaded", function () {
-    // Función para alternar "Me gusta"
-    document.querySelectorAll(".like-button").forEach(button => {
-        button.addEventListener("click", function () {
-            let likeCount = this.querySelector(".like-count");
-            let isLiked = this.classList.toggle("liked");
-            likeCount.textContent = isLiked ? parseInt(likeCount.textContent) + 1 : parseInt(likeCount.textContent) - 1;
-        });
-    });
+document.addEventListener("DOMContentLoaded", () => {
+    let posts = [];
+    const API_URL = 'http://localhost:8000/api/foro';
 
-    // Función para editar una publicación
-    document.querySelectorAll(".edit-button").forEach(button => {
-        button.addEventListener("click", function () {
-            let card = this.closest(".card");
-            let textElement = card.querySelector("p:not(.time)");
-            let newText = prompt("Edita tu publicación:", textElement.textContent);
-            if (newText !== null) textElement.textContent = newText;
-        });
-    });
-
-    // Función para eliminar una publicación con animación
-    document.querySelectorAll(".delete-button").forEach(button => {
-        button.addEventListener("click", function () {
-            let card = this.closest(".card");
-            if (confirm("¿Estás seguro de eliminar esta publicación?")) {
-                card.style.transition = "opacity 0.5s";
-                card.style.opacity = "0";
-                setTimeout(() => card.remove(), 500);
-            }
-        });
-    });
-
-    // Función para abrir el modal
-    document.getElementById("createPostBtn").addEventListener("click", function () {
-        document.getElementById("postModal").style.display = "block";
-    });
-
-    // Función para cerrar el modal
-    document.querySelector(".close-modal").addEventListener("click", function () {
-        document.getElementById("postModal").style.display = "none";
-    });
-
-    // Crear una nueva publicación desde el modal
-    document.getElementById("publishPostBtn").addEventListener("click", function () {
-        let postText = document.getElementById("newPostContent").value.trim();
-        if (postText === "") {
-            alert("No puedes publicar un mensaje vacío.");
-            return;
+    // Cargar publicaciones iniciales
+    const cargarPublicaciones = async () => {
+        try {
+            const response = await fetch(API_URL);
+            posts = await response.json();
+            renderizarPublicaciones();
+        } catch (error) {
+            mostrarNotificacion('Error al cargar publicaciones', 'error');
         }
+    };
 
-        let container = document.querySelector(".container");
-        let newCard = document.createElement("div");
-        newCard.classList.add("card");
-        newCard.innerHTML = `
-            <div class="profile">
-                <img src="https://i.pravatar.cc/50" alt="Nuevo usuario">
-                <div>
-                    <p class="name">Nuevo Usuario</p>
-                    <p class="time">Hace un momento</p>
+    // Renderizar publicaciones
+    const renderizarPublicaciones = () => {
+        const container = document.querySelector('main.container');
+        container.innerHTML = '';
+
+        posts.forEach(post => {
+            const cardHTML = `
+                <div class="card" data-id="${post.id}">
+                    <div class="profile">
+                        <div>
+                            <p class="name">${post.nombre}</p>
+                            <p class="time">⏰ ${new Date(post.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <p class="contenido">${post.contenido}</p>
+                    
+                    <div class="actions-right">
+                        <button class="like-button" data-liked="false">
+                            ❤️ <span class="like-count">${post.likes}</span>
+                        </button>
+                        <button class="edit-button">📝</button>
+                        <button class="delete-button">🚮</button>
+                    </div>
+                    
+                    <div class="comment-container">
+                        <div class="comments">
+                            ${post.comentarios ? post.comentarios.map(comentario => `
+                                <div class="comment">
+                                    <p><strong>${comentario.autor}:</strong> ${comentario.texto}</p>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                        <input type="text" class="nuevo-comentario" placeholder="Escribe un comentario...">
+                        <button class="add-comment">💬</button>
+                    </div>
                 </div>
-            </div>
-            <p>${postText}</p>
-            <button class="like-button">
-                <span class="heart">❤️</span>
-                <span class="like-count">0</span>
-            </button>
-            <button class="edit-button">✏️</button>
-            <button class="delete-button">🚮</button>
-            <div class="comment-container">
-                <button class="addCardBtn">Agregar comentario</button>
-                <div class="commentContainer"></div>
-            </div>
-        `;
-
-        container.prepend(newCard);
-        document.getElementById("postModal").style.display = "none";
-        document.getElementById("newPostContent").value = "";
-
-        // Agregar eventos a los botones de la nueva tarjeta
-        addEventListenersToPost(newCard);
-    });
-
-    // Agregar funcionalidad a los botones de comentarios
-    document.querySelectorAll(".addCardBtn").forEach(button => {
-        button.addEventListener("click", function () {
-            agregarComentario(this.closest(".card").querySelector(".commentContainer"));
-        });
-    });
-
-    function addEventListenersToPost(postElement) {
-        postElement.querySelector(".like-button").addEventListener("click", function () {
-            let likeCount = this.querySelector(".like-count");
-            let isLiked = this.classList.toggle("liked");
-            likeCount.textContent = isLiked ? parseInt(likeCount.textContent) + 1 : parseInt(likeCount.textContent) - 1;
+            `;
+            container.insertAdjacentHTML('beforeend', cardHTML);
         });
 
-        postElement.querySelector(".edit-button").addEventListener("click", function () {
-            let textElement = postElement.querySelector("p:not(.time)");
-            let newText = prompt("Edita tu publicación:", textElement.textContent);
-            if (newText !== null) textElement.textContent = newText;
+        agregarEventos();
+    };
+
+    // Configurar eventos
+    const agregarEventos = () => {
+        document.querySelectorAll('.like-button').forEach(btn => {
+            btn.addEventListener('click', manejarLike);
+        });
+        
+        document.querySelectorAll('.edit-button').forEach(btn => {
+            btn.addEventListener('click', manejarEdicion);
+        });
+        
+        document.querySelectorAll('.delete-button').forEach(btn => {
+            btn.addEventListener('click', manejarEliminacion);
+        });
+        
+        document.querySelectorAll('.add-comment').forEach(btn => {
+            btn.addEventListener('click', manejarComentario);
+        });
+    };
+
+    // Manejar likes
+    const manejarLike = async (e) => {
+        const card = e.target.closest('.card');
+        const postId = card.dataset.id;
+        
+        try {
+            const response = await fetch(`${API_URL}/${postId}/like`, { method: 'POST' });
+            const data = await response.json();
+            
+            const likeCount = card.querySelector('.like-count');
+            likeCount.textContent = data.likes;
+            
+            e.target.dataset.liked = e.target.dataset.liked === 'true' ? 'false' : 'true';
+            mostrarNotificacion('Like actualizado');
+        } catch (error) {
+            mostrarNotificacion('Error al dar like', 'error');
+        }
+    };
+
+    // Manejar edición
+    const manejarEdicion = async (e) => {
+        const card = e.target.closest('.card');
+        const postId = card.dataset.id;
+        const contenidoActual = card.querySelector('.contenido').textContent;
+        const nuevoContenido = prompt('Editar publicación:', contenidoActual);
+        
+        if (nuevoContenido && nuevoContenido !== contenidoActual) {
+            try {
+                const response = await fetch(`${API_URL}/${postId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contenido: nuevoContenido })
+                });
+                
+                const data = await response.json();
+                card.querySelector('.contenido').textContent = data.contenido;
+                mostrarNotificacion('Publicación actualizada');
+            } catch (error) {
+                mostrarNotificacion('Error al editar', 'error');
+            }
+        }
+    };
+
+    // Manejar eliminación
+    const manejarEliminacion = async (e) => {
+        const card = e.target.closest('.card');
+        const postId = card.dataset.id;
+        
+        if (confirm('¿Estás seguro de eliminar esta publicación?')) {
+            try {
+                await fetch(`${API_URL}/${postId}`, { method: 'DELETE' });
+                card.remove();
+                mostrarNotificacion('Publicación eliminada');
+            } catch (error) {
+                mostrarNotificacion('Error al eliminar', 'error');
+            }
+        }
+    };
+
+    // Manejar comentarios
+    const manejarComentario = async (e) => {
+        const card = e.target.closest('.card');
+        const postId = card.dataset.id;
+        const input = card.querySelector('.nuevo-comentario');
+        const texto = input.value.trim();
+        
+        if (!texto) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/${postId}/comentario`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texto })
+            });
+            
+            const data = await response.json();
+            const commentsContainer = card.querySelector('.comments');
+            
+            const commentHTML = `
+                <div class="comment">
+                    <p><strong>${data.autor}:</strong> ${data.texto}</p>
+                </div>
+            `;
+            
+            commentsContainer.insertAdjacentHTML('beforeend', commentHTML);
+            input.value = '';
+            mostrarNotificacion('Comentario agregado');
+        } catch (error) {
+            mostrarNotificacion('Error al comentar', 'error');
+        }
+    };
+
+    // Configurar modal
+    const configurarModal = () => {
+        const modal = document.getElementById('postModal');
+        const btnPublicar = document.getElementById('publishPostBtn');
+        
+        document.getElementById('createPostBtn').addEventListener('click', () => {
+            modal.style.display = 'block';
         });
 
-        postElement.querySelector(".delete-button").addEventListener("click", function () {
-            if (confirm("¿Seguro que deseas eliminar la publicación?")) {
-                postElement.style.transition = "opacity 0.5s";
-                postElement.style.opacity = "0";
-                setTimeout(() => postElement.remove(), 500);
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        btnPublicar.addEventListener('click', async () => {
+            const nombre = document.getElementById('nombreUsuario').value.trim();
+            const contenido = document.getElementById('newPostContent').value.trim();
+            
+            if (!nombre || !contenido) {
+                mostrarNotificacion('Nombre y contenido son requeridos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, contenido })
+                });
+                
+                const nuevaPublicacion = await response.json();
+                posts.unshift(nuevaPublicacion);
+                renderizarPublicaciones();
+                modal.style.display = 'none';
+                mostrarNotificacion('Publicación creada');
+            } catch (error) {
+                mostrarNotificacion('Error al publicar', 'error');
             }
         });
+    };
 
-        postElement.querySelector(".addCardBtn").addEventListener("click", function () {
-            agregarComentario(postElement.querySelector(".commentContainer"));
-        });
-    }
+    // Notificaciones
+    const mostrarNotificacion = (mensaje, tipo = 'success') => {
+        const notificacion = document.createElement('div');
+        notificacion.className = `notificacion ${tipo}`;
+        notificacion.textContent = mensaje;
+        document.body.appendChild(notificacion);
+        
+        setTimeout(() => notificacion.remove(), 3000);
+    };
 
-    function agregarComentario(container) {
-        let comentarioTexto = prompt("Escribe tu comentario:");
-        if (!comentarioTexto) return;
-
-        let commentDiv = document.createElement("div");
-        commentDiv.classList.add("comment");
-        commentDiv.innerHTML = `
-            <div class="comment-content">
-                <p>${comentarioTexto}</p>
-                <button class="edit-comment">✏️</button>
-                <button class="delete-comment">🚮</button>
-            </div>
-        `;
-
-        container.appendChild(commentDiv);
-
-        commentDiv.querySelector(".edit-comment").addEventListener("click", function () {
-            let nuevoTexto = prompt("Edita tu comentario:", commentDiv.querySelector("p").textContent);
-            if (nuevoTexto !== null) commentDiv.querySelector("p").textContent = nuevoTexto;
-        });
-
-        commentDiv.querySelector(".delete-comment").addEventListener("click", function () {
-            commentDiv.remove();
-        });
-    }
+    // Inicializar
+    cargarPublicaciones();
+    configurarModal();
 });

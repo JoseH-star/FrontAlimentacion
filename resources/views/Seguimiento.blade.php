@@ -10,11 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <title>Seguimiento del Progreso</title>
   
-
     <link rel="stylesheet" href="{{ asset('css/Header.css') }}">
     <link rel="stylesheet" href="{{ asset('css/Footer.css') }}">
     <link rel="stylesheet" href="{{ asset('css/Seguimiento.css') }}">
-    
 </head>
 
 <header>
@@ -75,38 +73,40 @@
     <div class="container">
       <!-- Lado Izquierdo -->
       <div class="left-panel">
-          <h1>Objetivo de salud</h1><br>
-          <h2>¿Ingresa la descripción del objetivo?</h2>
-          <textarea placeholder="Describe tu objetivo..."></textarea>
-          
-          <h2>¿Selecciona fecha objetivo?</h2>
-          <input type="date">
-          
-          <h2>¿Peso actual?</h2>
-          <input type="text" id="pesoActual" readonly> 
+        <h1>Objetivo de salud</h1>
+        
+        <div class="form-section" style="margin-top: 50px;">
+            <h2>Descripción del objetivo</h2>
+            <textarea id="descripcion" placeholder="Ej: Perder 5kg para verano..."></textarea>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <h2>Fecha objetivo</h2>
+                    <input type="date" id="fechaObjetivo">
+                </div>
+                
+                <div class="form-group">
+                    <h2>Peso actual (kg)</h2>
+                    <input type="number" id="pesoActual" min="20" max="200" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <h2>Meta de peso (kg)</h2>
+                    <input type="number" id="metaPeso" min="20" max="200" step="0.1">
+                </div>
+            </div>
 
-            <!-- Entrada de meta editable -->
-            <div class="meta-input">
-              <label for="metaPeso"> 
-
-                <h2>¿Actualizar Meta de Peso?</h2>
-                </label>
-              <input type="number" id="metaPeso" value="65" onchange="actualizarGraficaMeta()">
-          </div>
-          
-          <h2>Meta</h2>
-          <input type="text" id="metaSalud" readonly>
-          
-          <h2>¿Plan de dieta recomendado?</h2>
-          <textarea id="planDieta" readonly></textarea>
-          
-          <a href="" class="button" id="actualizar">ACTUALIZAR</a>
-          <a href="" class="button" id="guardar">GUARDAR</a>
-      </div>
+            <button class="button primary" id="guardar">💾 Guardar Objetivo</button>
+            
+            <div class="plan-dieta-box" style="margin-top: 100px;">
+                <h3>🏅 Plan de dieta recomendado:</h3>
+                <textarea id="planDieta" readonly></textarea>
+            </div>
+        </div>
+    </div>
 
       <div class="right-panel">
         <h1>Seguimiento del Progreso</h1><br>
-          <!-- Contenedor de gráficas -->
           <div class="charts-container">
             <div class="chart-box"><canvas id="progressChart"></canvas></div>
           </div>
@@ -114,19 +114,17 @@
 
           <h3>Historial de avances</h3>
           <ul id="historial">
-              <ul>Semana 1: Peso 70 kg</ul>
-              <ul>Semana 2: Peso 69.5 kg</ul>
-              <ul>Semana 3: Peso 69 kg</ul>
+              <!-- Los elementos se cargarán dinámicamente -->
           </ul>
           <br><br>
 
           <div class="charts-container">
             <div class="chart-box"><canvas id="goalChart"></canvas></div>
-        </div>
-
-          <div class="buttons">
-              <a href="{{ route('inicio') }}" class="button" onclick="volverInicio()">Volver al Inicio</a>
           </div>
+
+          <!-- <div class="buttons">
+              <a href="{{ route('inicio') }}" class="button" onclick="volverInicio()">Volver al Inicio</a>
+          </div> -->
       </div>
     </div>
 </body>
@@ -170,6 +168,19 @@
       </div>
     </div>
 </footer>
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          // Cargar peso actual del test inicial
+          fetch('http://localhost:8000/api/test-bienestar')
+              .then(response => response.json())
+              .then(data => {
+                  if(data.length > 0) {
+                      document.getElementById('pesoActual').value = data[0].peso;
+                  }
+              });
+      });
+  </script>
 
     <script src="{{ asset('js/Seguimiento.js') }}"></script>
     <script src="{{ asset('js/Header.js') }}"></script>
